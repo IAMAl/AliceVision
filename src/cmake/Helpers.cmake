@@ -460,8 +460,16 @@ macro(av_add_cmake_dep)
         if(_D_GIT_TAG)
             list(APPEND _D_SRC_ARGS GIT_TAG      ${_D_GIT_TAG})
         endif()
-        # Shallow clone : plus rapide, économise le réseau
-        list(APPEND _D_SRC_ARGS GIT_SHALLOW TRUE)
+        # Shallow clone : plus rapide, économise le réseau.
+        # Mais un commit SHA arbitraire (non-tip) n'est pas joignable en shallow
+        # ("fatal: reference is not a tree"), donc on désactive le shallow dans ce cas.
+        # NB: CMake regex has no {n} quantifier, so detect a 40-char hex SHA via length.
+        string(LENGTH "${_D_GIT_TAG}" _av_tag_len)
+        if(_D_GIT_TAG MATCHES "^[0-9a-fA-F]+$" AND _av_tag_len EQUAL 40)
+            list(APPEND _D_SRC_ARGS GIT_SHALLOW FALSE)
+        else()
+            list(APPEND _D_SRC_ARGS GIT_SHALLOW TRUE)
+        endif()
     endif()
 
     ExternalProject_Add(${_D_TARGET}
