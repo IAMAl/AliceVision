@@ -52,6 +52,15 @@ if (NOT ALICEVISION_HAVE_SSE)
     list(APPEND SIMD_DEFINITIONS "-DVL_DISABLE_SSE2")
 endif()
 
+# The bundled VLFeat AVX kernels (vl/mathop_avx.c) use AVX intrinsics that, on
+# GCC/Clang, require -mavx to compile (MSVC gets /arch:AVX globally). Without it the
+# file fails with "#error Compiling AVX functions but AVX does not seem to be supported"
+# and a cascade of unknown-type errors. Scope the flag to that single translation unit
+# so the rest of the library keeps its default ISA baseline.
+if (ALICEVISION_HAVE_AVX AND (CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang"))
+    set_source_files_properties(vl/mathop_avx.c PROPERTIES COMPILE_OPTIONS "-mavx")
+endif()
+
 alicevision_add_library(vlsift
     SOURCES
         ${FEATS} ${FEATS_H}
